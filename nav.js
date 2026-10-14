@@ -1,1 +1,24 @@
-(()=>{const e=document.querySelector(".menu-toggle"),t=document.querySelector("#mobile-nav");e.addEventListener("click",(()=>{const a="true"!==e.getAttribute("aria-expanded");e.setAttribute("aria-expanded",String(a)),e.setAttribute("aria-label",a?"Close navigation":"Open navigation"),t.hidden=!a})),t.querySelectorAll("a").forEach((a=>a.addEventListener("click",(()=>{t.hidden=!0,e.setAttribute("aria-expanded","false"),e.setAttribute("aria-label","Open navigation")})))),document.addEventListener("keydown",(a=>{"Escape"!==a.key||t.hidden||(t.hidden=!0,e.setAttribute("aria-expanded","false"),e.setAttribute("aria-label","Open navigation"),e.focus())}));})();
+// Mobile menu, shared by every page.
+(() => {
+  const toggle = document.querySelector(".menu-toggle");
+  const menu = document.querySelector("#mobile-nav");
+
+  function setOpen(open) {
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+    menu.hidden = !open;
+  }
+
+  toggle.addEventListener("click", () => {
+    setOpen(toggle.getAttribute("aria-expanded") !== "true");
+  });
+
+  menu.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setOpen(false)));
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !menu.hidden) {
+      setOpen(false);
+      toggle.focus();
+    }
+  });
+})();
