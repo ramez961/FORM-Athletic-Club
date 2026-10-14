@@ -2511,3 +2511,222 @@ html body .image-card strong {
     display: flex;
   }
 }
+
+/* Scroll reveal (classes added by nav.js). "html body" outranks card rules
+   such as .price-grid article that set their own transition. */
+html body .reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: none;
+}
+
+/* Transition only on the way in, so hiding never animates. */
+html body .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1);
+  transition-delay: calc(var(--reveal-i, 0) * 90ms);
+}
+
+/* Designer credit in the footer */
+footer .credit {
+  width: 100%;
+  color: var(--muted);
+}
+
+footer .credit a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Case study page */
+.case-shot {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 60px -30px #1c1c1c55;
+}
+
+.case-section h2 {
+  max-width: 760px;
+}
+
+.case-section .lede {
+  max-width: 620px;
+  margin-top: 22px;
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-top: 45px;
+}
+
+.swatch {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12px;
+}
+
+.swatch i {
+  display: block;
+  height: 110px;
+}
+
+.swatch div {
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.swatch code {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.type-specimens {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.type-specimens article {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 26px;
+}
+
+.type-specimens b {
+  display: block;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.1;
+  margin: 14px 0;
+}
+
+.type-specimens p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0 40px;
+  margin-top: 45px;
+}
+
+.feature-grid article {
+  border-top: 1px solid var(--line);
+  padding: 26px 0;
+}
+
+.feature-grid span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.feature-grid h3 {
+  font-size: 20px;
+  margin: 12px 0 10px;
+}
+
+.feature-grid p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 45px;
+}
+
+.stats div {
+  background: var(--ink);
+  color: #fff;
+  border-radius: 8px;
+  padding: 26px;
+}
+
+.stats strong {
+  display: block;
+  font-family: Manrope, sans-serif;
+  font-size: 54px;
+  font-weight: 600;
+  letter-spacing: -2px;
+  color: var(--lime);
+}
+
+.stats span {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.check-list {
+  list-style: none;
+  padding: 0;
+  margin: 35px 0 0;
+  columns: 2;
+  column-gap: 40px;
+}
+
+.check-list li {
+  break-inside: avoid;
+  padding: 14px 0 14px 28px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+
+.check-list li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #568000;
+  font-weight: 700;
+}
+
+.case-note {
+  background: var(--surface);
+}
+
+@media (max-width:1000px) {
+  .swatches {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .feature-grid, .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width:700px) {
+  .swatches {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .type-specimens {
+    grid-template-columns: 1fr;
+  }
+  .feature-grid, .check-list {
+    grid-template-columns: 1fr;
+    columns: 1;
+  }
+  .stats strong {
+    font-size: 40px;
+  }
+  .stats div, .type-specimens article {
+    padding: 20px;
+  }
+}
