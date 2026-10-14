@@ -1,18 +1,3 @@
-// Mobile navigation
-const menuButton=document.querySelector('.menu-toggle');
-const mobileMenu=document.querySelector('#mobile-nav');
-menuButton.addEventListener('click',()=>{
-  const open=menuButton.getAttribute('aria-expanded')!=='true';
-  menuButton.setAttribute('aria-expanded',String(open));
-  menuButton.setAttribute('aria-label',open?'Close navigation':'Open navigation');
-  mobileMenu.hidden=!open;
-});
-mobileMenu.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{
-  mobileMenu.hidden=true;
-  menuButton.setAttribute('aria-expanded','false');
-  menuButton.setAttribute('aria-label','Open navigation');
-}));
-
 // BMI is calculated on this page and never persisted.
 let bmiUnit='metric';
 const bmiHeight=document.querySelector('#bmi-height');
@@ -104,6 +89,7 @@ function renderBag(){
 }
 document.querySelector('#open-bag').onclick=()=>{renderBag();bagDialog.showModal()};
 document.querySelector('#close-bag').onclick=()=>bagDialog.close();
+bagDialog.addEventListener('click',closeOnBackdrop);
 document.querySelector('#download-bag').onclick=()=>{
  const lines=bag.map(b=>{const p=products.find(p=>p.id===b.id);return `${p.name} / ${b.size} × ${b.quantity}: ${money(p.price*b.quantity)}`});
  const text=['FORM — Demo shopping bag',...lines,'Subtotal: '+document.querySelector('#bag-subtotal').textContent,'No order placed. No payment collected. Taxes and shipping not included.'].join('\n');
