@@ -1,51 +1,8 @@
-// FORM home page: schedule, membership, planner, BMI and demo shop.
+// FORM home page: schedule, membership, planner and BMI (the shop is in shop.js).
 (() => {
-  const $ = (selector) => document.querySelector(selector);
-  const $$ = (selector) => document.querySelectorAll(selector);
+  const { $, $$, showToast, closeOnBackdrop, setActive, downloadText, el } = window.FORM;
 
-  let toastTimer;
   let billing = "monthly";
-
-  function showToast(message) {
-    $("#toast").textContent = message;
-    $("#toast").classList.add("visible");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => $("#toast").classList.remove("visible"), 3500);
-  }
-
-  // Close a <dialog> when its backdrop (outside the box) is clicked.
-  function closeOnBackdrop(event) {
-    const dialog = event.currentTarget;
-    if (event.target !== dialog) return;
-    const box = dialog.getBoundingClientRect();
-    const outside =
-      event.clientX < box.left || event.clientX > box.right ||
-      event.clientY < box.top || event.clientY > box.bottom;
-    if (outside) dialog.close();
-  }
-
-  // Mark one button in a group as active (and pressed for screen readers).
-  function setActive(buttons, active) {
-    buttons.forEach((button) => {
-      button.classList.toggle("active", button === active);
-      button.setAttribute("aria-pressed", String(button === active));
-    });
-  }
-
-  function downloadText(filename, text) {
-    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function el(tag, props = {}, ...children) {
-    const node = Object.assign(document.createElement(tag), props);
-    node.append(...children);
-    return node;
-  }
 
   // ---- Hero photo: hide only if it really fails, and bring it back if it loads.
   const heroPhoto = $(".hero-photo");
@@ -163,6 +120,8 @@
     try {
       localStorage.removeItem("form-interest");
       localStorage.removeItem(BOOKINGS_KEY);
+      localStorage.removeItem("form-bag");
+      window.FORM.clearBag?.();
       $("#join-form").reset();
       $("#join-status").textContent = "All saved FORM demo data cleared.";
       renderSessions($(".filters .active").dataset.day);
@@ -319,156 +278,4 @@
     result.hidden = false;
     value.focus();
   });
-
-  // ---- Demo shop and shopping bag
-  const MAX_QUANTITY = 10;
-  const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
-  const products = [
-    { id: "men", name: "Men’s Training Set", category: "men", price: 52, image: "merch-men", description: "Charcoal training tee + blue cap.", sizes: CLOTHING_SIZES },
-    { id: "women", name: "Women’s Studio Set", category: "women", price: 52, image: "merch-women", description: "Slate blue cropped tee + ivory tote.", sizes: CLOTHING_SIZES },
-    { id: "volleyball", name: "Volleyball Court Kit", category: "sport", price: 68, image: "merch-volleyball", description: "Unisex jersey, shorts + volleyball.", sizes: CLOTHING_SIZES },
-    { id: "football", name: "Football Match Kit", category: "sport", price: 68, image: "merch-football", description: "Unisex jersey, shorts + football.", sizes: CLOTHING_SIZES },
-    { id: "equipment", name: "Gym Essentials", category: "equipment", price: 58, image: "merch-equipment", description: "Bottle, exercise mat + resistance loop.", sizes: [] },
-    { id: "sports", name: "Multisport Collection", category: "equipment", price: 98, image: "merch-sports", description: "Basketball, volleyball, American football + duffel.", sizes: [] },
-  ];
-  const bag = []; // { id, size, quantity }
-  const bagDialog = $("#bag-dialog");
-  const money = (n) => "$" + (Number.isInteger(n) ? n : n.toFixed(2));
-  const productById = (id) => products.find((p) => p.id === id);
-
-  function renderProducts(category = "all") {
-    const grid = $("#products");
-    grid.replaceChildren();
-    products
-      .filter((product) => category === "all" || product.category === category)
-      .forEach((product) => {
-        const image = el("img", {
-          src: `assets/${product.image}-640.webp`,
-          srcset: `assets/${product.image}-360.webp 360w,assets/${product.image}-640.webp 640w`,
-          sizes: "(max-width:700px) 45vw,30vw",
-          alt: `AI-generated FORM ${product.name.toLowerCase()} with the club emblem`,
-          width: 640,
-          height: 640,
-          loading: "lazy",
-        });
-
-        const buy = el("div", { className: "product-buy" });
-        let sizeSelect;
-        if (product.sizes.length) {
-          sizeSelect = el("select");
-          sizeSelect.setAttribute("aria-label", `${product.name} size`);
-          product.sizes.forEach((size) => sizeSelect.append(el("option", { value: size, textContent: size })));
-          sizeSelect.value = "M";
-          buy.append(el("label", { textContent: "Size" }, sizeSelect));
-        }
-
-        const add = el("button", { className: "button", textContent: "Add to bag +" });
-        add.setAttribute("aria-label", `Add ${product.name} to bag`);
-        add.addEventListener("click", () => {
-          const size = sizeSelect ? sizeSelect.value : "One size";
-          const line = bag.find((item) => item.id === product.id && item.size === size);
-          if (line) line.quantity = Math.min(line.quantity + 1, MAX_QUANTITY);
-          else bag.push({ id: product.id, size, quantity: 1 });
-          renderBag();
-          showToast(`${product.name} added to your demo bag.`);
-        });
-        buy.append(add);
-
-        grid.append(el("article", { className: "product-card" },
-          el("div", { className: "product-photo" }, image),
-          el("div", { className: "product-heading" },
-            el("h3", { textContent: product.name }),
-            el("span", { textContent: money(product.price) }),
-          ),
-          el("p", { textContent: product.description }),
-          buy,
-        ));
-      });
-  }
-
-  function renderBag() {
-    $("#bag-count").textContent = String(bag.reduce((sum, item) => sum + item.quantity, 0));
-    const list = $("#bag-items");
-    list.replaceChildren();
-
-    if (!bag.length) {
-      const empty = el("p", { textContent: "Your bag is waiting for a little FORM." });
-      empty.style.marginTop = "25px";
-      list.append(empty);
-    }
-
-    bag.forEach((item, index) => {
-      const product = productById(item.id);
-      const thumb = el("img", { src: `assets/${product.image}-360.webp`, alt: product.name });
-      thumb.width = thumb.height = 58;
-
-      const minus = el("button", { textContent: "−" });
-      minus.setAttribute("aria-label", `Decrease ${product.name} quantity`);
-      minus.onclick = () => {
-        if (item.quantity > 1) item.quantity--;
-        else bag.splice(index, 1);
-        renderBag();
-      };
-
-      const plus = el("button", { textContent: "+", disabled: item.quantity >= MAX_QUANTITY });
-      plus.setAttribute("aria-label", `Increase ${product.name} quantity`);
-      plus.onclick = () => {
-        item.quantity = Math.min(item.quantity + 1, MAX_QUANTITY);
-        renderBag();
-      };
-
-      const remove = el("button", { className: "bag-remove", textContent: "Remove" });
-      remove.setAttribute("aria-label", `Remove ${product.name} ${item.size}`);
-      remove.onclick = () => {
-        bag.splice(index, 1);
-        renderBag();
-      };
-
-      list.append(el("div", { className: "bag-row" },
-        thumb,
-        el("div", {},
-          el("strong", { textContent: product.name }),
-          el("small", { textContent: `${item.size} · ${money(product.price)} each` }),
-          el("div", { className: "bag-controls" }, minus, el("span", { textContent: item.quantity }), plus, remove),
-        ),
-        el("strong", { textContent: money(item.quantity * product.price) }),
-      ));
-    });
-
-    $("#bag-subtotal").textContent = money(bag.reduce((sum, item) => sum + item.quantity * productById(item.id).price, 0));
-    $("#download-bag").disabled = bag.length === 0;
-    $("#bag-status").textContent = "";
-  }
-
-  const categoryButtons = $$("[data-category]");
-  categoryButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      setActive(categoryButtons, button);
-      renderProducts(button.dataset.category);
-    });
-  });
-
-  $("#open-bag").onclick = () => {
-    renderBag();
-    bagDialog.showModal();
-  };
-  $("#close-bag").onclick = () => bagDialog.close();
-  bagDialog.addEventListener("click", closeOnBackdrop);
-
-  $("#download-bag").onclick = () => {
-    const lines = [
-      "FORM — Demo shopping bag",
-      ...bag.map((item) => {
-        const product = productById(item.id);
-        return `${product.name} / ${item.size} × ${item.quantity}: ${money(product.price * item.quantity)}`;
-      }),
-      "Subtotal: " + $("#bag-subtotal").textContent,
-      "No order placed. No payment collected. Taxes and shipping not included.",
-    ];
-    downloadText("form-demo-bag.txt", lines.join("\n"));
-    $("#bag-status").textContent = "Demo bag summary downloaded.";
-  };
-
-  renderProducts();
-  renderBag();
 })();

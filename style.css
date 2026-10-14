@@ -2732,3 +2732,159 @@ footer .credit a {
     padding: 20px;
   }
 }
+
+/* Shop: badges, photo placeholders, shop page and size guide */
+.product-card {
+  position: relative;
+}
+
+.new-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 20px;
+}
+
+.product-photo.placeholder {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  background: linear-gradient(140deg, var(--surface-2), #cfe0ee);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.product-photo.placeholder img {
+  width: 48px;
+  height: 48px;
+  opacity: .35;
+}
+
+.bag-thumb-placeholder {
+  object-fit: contain;
+  padding: 12px;
+  background: var(--surface-2);
+}
+
+.shop-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+  padding: 24px 28px;
+  border-radius: 8px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+
+.shop-more p {
+  font-size: 15px;
+}
+
+.shop-page {
+  padding-top: 50px;
+}
+
+.shop-page h1 {
+  font-size: clamp(52px, 6.4vw, 96px);
+  margin: 18px 0 0;
+}
+
+.shop-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.product-count {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+nav a[aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-color: var(--blue);
+}
+
+.size-guide {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8%;
+  align-items: start;
+}
+
+.size-guide p {
+  margin-top: 20px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.size-tables {
+  display: grid;
+  gap: 30px;
+}
+
+.size-tables table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.size-tables caption {
+  text-align: left;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding-bottom: 12px;
+}
+
+.size-tables th, .size-tables td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.size-tables th:first-child {
+  text-align: left;
+}
+
+.size-tables thead th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+@media (max-width:700px) {
+  .shop-toolbar-end {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .size-guide {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+  .size-tables {
+    overflow-x: auto;
+  }
+  .size-tables table {
+    min-width: 420px;
+  }
+  .shop-more {
+    padding: 20px;
+  }
+}
