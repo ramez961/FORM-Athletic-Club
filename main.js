@@ -324,8 +324,8 @@
   const MAX_QUANTITY = 10;
   const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
   const products = [
-    { id: "men", name: "Men’s Training Set", category: "men", price: 52, image: "merch-men", description: "Charcoal training tee + lime cap.", sizes: CLOTHING_SIZES },
-    { id: "women", name: "Women’s Studio Set", category: "women", price: 52, image: "merch-women", description: "Sage cropped tee + ivory tote.", sizes: CLOTHING_SIZES },
+    { id: "men", name: "Men’s Training Set", category: "men", price: 52, image: "merch-men", description: "Charcoal training tee + blue cap.", sizes: CLOTHING_SIZES },
+    { id: "women", name: "Women’s Studio Set", category: "women", price: 52, image: "merch-women", description: "Slate blue cropped tee + ivory tote.", sizes: CLOTHING_SIZES },
     { id: "volleyball", name: "Volleyball Court Kit", category: "sport", price: 68, image: "merch-volleyball", description: "Unisex jersey, shorts + volleyball.", sizes: CLOTHING_SIZES },
     { id: "football", name: "Football Match Kit", category: "sport", price: 68, image: "merch-football", description: "Unisex jersey, shorts + football.", sizes: CLOTHING_SIZES },
     { id: "equipment", name: "Gym Essentials", category: "equipment", price: 58, image: "merch-equipment", description: "Bottle, exercise mat + resistance loop.", sizes: [] },
