@@ -1,16 +1,1 @@
-// Mobile navigation
-const menuButton=document.querySelector('.menu-toggle');
-const mobileMenu=document.querySelector('#mobile-nav');
-menuButton.addEventListener('click',()=>{
-  const open=menuButton.getAttribute('aria-expanded')!=='true';
-  menuButton.setAttribute('aria-expanded',String(open));
-  menuButton.setAttribute('aria-label',open?'Close navigation':'Open navigation');
-  mobileMenu.hidden=!open;
-});
-mobileMenu.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{
-  mobileMenu.hidden=true;
-  menuButton.setAttribute('aria-expanded','false');
-  menuButton.setAttribute('aria-label','Open navigation');
-}));
-// Close the menu with Escape.
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!mobileMenu.hidden){mobileMenu.hidden=true;menuButton.setAttribute('aria-expanded','false');menuButton.setAttribute('aria-label','Open navigation');menuButton.focus()}});
+(()=>{const e=document.querySelector(".menu-toggle"),t=document.querySelector("#mobile-nav");e.addEventListener("click",(()=>{const a="true"!==e.getAttribute("aria-expanded");e.setAttribute("aria-expanded",String(a)),e.setAttribute("aria-label",a?"Close navigation":"Open navigation"),t.hidden=!a})),t.querySelectorAll("a").forEach((a=>a.addEventListener("click",(()=>{t.hidden=!0,e.setAttribute("aria-expanded","false"),e.setAttribute("aria-label","Open navigation")})))),document.addEventListener("keydown",(a=>{"Escape"!==a.key||t.hidden||(t.hidden=!0,e.setAttribute("aria-expanded","false"),e.setAttribute("aria-label","Open navigation"),e.focus())}));})();
