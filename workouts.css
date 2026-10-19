@@ -1,3 +1,7 @@
+.workout-page { --blue: #007b52; }
+.workout-page h1 em, .workout-page h2 em,
+.workout-page nav a:hover, .workout-page nav a[aria-current="page"] { color: var(--blue); }
+.workout-page :is(a, button, input, select, summary, textarea):focus-visible { outline-color: var(--blue); }
 .workout-main { max-width: 1440px; margin: auto; padding: 66px 5% 90px; }
 .log-intro { display: flex; justify-content: space-between; align-items: end; gap: 36px; padding-bottom: 48px; }
 .log-intro h1 { font-size: clamp(48px, 5.5vw, 80px); letter-spacing: -4px; margin: 18px 0; }
@@ -72,3 +76,4 @@
  .log-layout { grid-template-columns: minmax(0,1fr); } .storage-note { margin: 22px 0 6px; } .session-panel { padding: 18px 12px; } .exercise-card { padding: 15px 10px; } .workout-heading h2 { font-size: 28px; }
  .set-row, .set-labels { gap: 6px; grid-template-columns: 24px minmax(45px,1fr) minmax(55px,1fr) 36px 36px; } .set-row input { padding: 9px 5px; } .workout-heading { flex-wrap: wrap; }
 }
+
