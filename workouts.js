@@ -2,7 +2,19 @@
 (() => {
   "use strict";
   const { $, el, showToast, downloadText, closeOnBackdrop } = window.FORM;
-  const KEY = "form-workout-log-v1";
+  const LEGACY_KEY = "form-workout-log-v1", USERS_KEY = "form-workout-users-v1", ACTIVE_KEY = "form-workout-active-user";
+  let users = [{id:"default",name:"My training"}], activeUser = "default", registryBlocked = false;
+  try {
+    const raw = localStorage.getItem(USERS_KEY);
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list) || !list.length || list.length>20 || new Set(list.map(u=>u.id)).size!==list.length || !list.every(u=>u&&typeof u.id==="string"&&/^(default|[0-9a-f-]{36})$/.test(u.id)&&typeof u.name==="string"&&u.name.trim()&&u.name.length<=50)) throw new Error("Invalid profiles");
+      users = list;
+    }
+    const active = localStorage.getItem(ACTIVE_KEY);
+    if (users.some(u=>u.id===active)) activeUser=active;
+  } catch { registryBlocked = true; showToast("Browser profiles could not be read. Your original log is still available."); }
+  const KEY = activeUser==="default" ? LEGACY_KEY : LEGACY_KEY+":"+activeUser;
   const dateKey = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
   const parseDate = (key) => new Date(key + "T12:00:00");
   const shiftDate = (key, days) => { const d = parseDate(key); d.setDate(d.getDate() + days); return dateKey(d); };
@@ -17,7 +29,7 @@
     const number = (v, max, integer = false) => v === "" || (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= max && (!integer || Number.isInteger(v)));
     const ids = new Set();
     const id = (v) => { if (!text(v, 100) || !v || ids.has(v)) return false; ids.add(v); return true; };
-    if (!value || value.version !== 1 || !Array.isArray(value.sessions) || value.sessions.length > 5000) return false;
+    if (!value || value.version !== 1 || !Array.isArray(value.sessions) || value.sessions.length > 5000 || (value.profile && !window.FORMTraining.validProfile(value.profile))) return false;
     return value.sessions.every(s => s && id(s.id) && text(s.title, 80) && s.title.trim() && validDate(s.date) && ["kg", "lb"].includes(s.unit) && text(s.notes, 1500) && typeof s.completed === "boolean" && Array.isArray(s.exercises) && s.exercises.length <= 100 && s.exercises.every(e => e && id(e.id) && text(e.name, 100) && Array.isArray(e.sets) && e.sets.length > 0 && e.sets.length <= 100 && e.sets.every(t => t && id(t.id) && number(t.reps, 10000, true) && number(t.weight, 100000) && typeof t.done === "boolean")));
   }
   function status(message) { $("#save-state").textContent = message; }
@@ -80,26 +92,31 @@
       $("#session-list").append(b);
     });
     renderSession();
+    window.dispatchEvent(new CustomEvent("form:log-rendered"));
   }
   function renderSession() {
     const panel = $("#session-panel"), s = current();
     panel.replaceChildren();
     if (!s) {
       const empty = el("div", { className: "empty-log" }, el("span", { className: "empty-mark", textContent: "↗", ariaHidden: "true" }), el("h2", { textContent: "Your next strong start." }), el("p", { textContent: "Plan a session for this day, add your exercises, then log the reps and weight for each set as you train." }), button("Plan a workout ＋", () => openSession(), "button"));
-      panel.append(empty); return;
+      panel.append(empty);
+      window.FORMTrainingUI?.decorateDay(panel, null, data, selectedDate);
+      return;
     }
     const completed = el("input", { type: "checkbox", checked: s.completed });
     completed.addEventListener("change", () => { s.completed = completed.checked; save(); render(); });
     panel.append(el("div", { className: "workout-heading" }, el("div", {}, el("div", { className: "eyebrow", textContent: "YOUR WORKOUT / " + s.unit.toUpperCase() }), el("h2", { textContent: s.title })), el("label", { className: "completion" }, completed, "Session complete")));
     if (s.notes) panel.append(el("p", { className: "session-notes", textContent: s.notes }));
     panel.append(el("div", { className: "workout-actions" }, button("Edit / move", () => openSession(s)), button("Repeat session", () => openSession(s, true)), button("Delete", () => confirmAction("Delete session?", "Delete “" + s.title + "” and all its logged sets? This cannot be undone.", "Delete session", () => { data.sessions = data.sessions.filter(item => item.id !== s.id); save(); render(); }), "quiet danger")));
-    if (!s.exercises.length) panel.append(el("p", { className: "exercise-hint", textContent: "Add your first exercise. You can use any movement or machine name and add as many sets as you need." }));
+    window.FORMTrainingUI?.decorateDay(panel, s, data, selectedDate);
+    if (!s.exercises.length) panel.append(el("p", { className: "exercise-hint", textContent: "Choose an exercise from the library or add your own movement below." }));
     s.exercises.forEach((exercise, index) => {
       const card = el("article", { className: "exercise-card" });
       const name = el("input", { value: exercise.name, placeholder: "e.g. Bench press", maxLength: 100, required: true });
       name.dataset.exerciseName = exercise.id;
-      name.addEventListener("input", () => { exercise.name = name.value; save(); });
+      name.addEventListener("input", () => { exercise.name = name.value; delete exercise.catalogId; delete exercise.target; save(); });
       card.append(el("div", { className: "exercise-heading" }, el("label", { className: "exercise-name", textContent: "EXERCISE " + String(index + 1).padStart(2, "0") }, name), button("Remove", () => confirmAction("Remove exercise?", "Remove this exercise and its sets?", "Remove exercise", () => { s.exercises = s.exercises.filter(e => e.id !== exercise.id); save(); render(); }), "quiet remove-exercise")));
+      window.FORMTrainingUI?.decorateExercise(card, exercise, s, data);
       card.append(el("div", { className: "set-labels", ariaHidden: "true" }, el("span", { textContent: "SET" }), el("span", { textContent: "REPS" }), el("span", { textContent: "WEIGHT (" + s.unit.toUpperCase() + ")" }), el("span", { textContent: "DONE" }), el("span")));
       exercise.sets.forEach((set, setIndex) => {
         const row = el("div", { className: "set-row" + (set.done ? " done" : "") });
@@ -117,7 +134,7 @@
         });
         const done = el("input", { type: "checkbox", checked: set.done });
         done.setAttribute("aria-label", "Mark set " + (setIndex + 1) + " complete for " + (exercise.name || "exercise " + (index + 1)));
-        done.addEventListener("change", () => { set.done = done.checked; row.classList.toggle("done", set.done); save(); });
+        done.addEventListener("change", () => { set.done = done.checked; row.classList.toggle("done", set.done); save(); window.dispatchEvent(new CustomEvent("form:set-completed",{detail:{done:set.done,rest:exercise.target?.rest||75}})); });
         const remove = button("×", () => { exercise.sets = exercise.sets.filter(t => t.id !== set.id); save(); renderSession(); });
         remove.setAttribute("aria-label", "Remove set " + (setIndex + 1));
         remove.disabled = exercise.sets.length === 1;
@@ -167,7 +184,7 @@
       if (data.sessions.length >= 5000) { showToast("Your log is full. Download a backup and remove old sessions."); return; }
       const source = data.sessions.find(item => item.id === copyingId);
       const factor = source && source.unit !== unit ? (unit === "lb" ? 2.2046226218 : 1 / 2.2046226218) : 1;
-      s = { id: uid(), completed: false, exercises: source ? source.exercises.map(e => ({ id: uid(), name: e.name, sets: e.sets.map(t => ({ ...t, id: uid(), done: false, weight: t.weight === "" ? "" : Math.round(t.weight * factor * 100) / 100 })) })) : [] };
+      s = { id: uid(), completed: false, exercises: source ? source.exercises.map(e => ({ ...e, id: uid(), sets: e.sets.map(t => ({ ...t, id: uid(), done: false, weight: t.weight === "" ? "" : Math.round(t.weight * factor * 100) / 100 })) })) : [] };
       if (s.exercises.some(e => e.sets.some(t => t.weight > 100000))) { showToast("A converted weight exceeds the supported limit."); return; }
       data.sessions.push(s);
     }
@@ -192,7 +209,10 @@
   $("#today").addEventListener("click", () => chooseDate(dateKey(new Date())));
   $("#jump-date").min = "1900-01-01"; $("#jump-date").max = "9999-12-31";
   $("#jump-date").addEventListener("input", event => chooseDate(event.target.value));
-  $("#export").addEventListener("click", () => { downloadText("form-workouts-" + dateKey(new Date()) + ".json", JSON.stringify(data, null, 2)); showToast("Backup downloaded."); });
+  $("#export").addEventListener("click", () => {
+    const profileName=(users.find(u=>u.id===activeUser)?.name||"training").replace(/[^a-z0-9-]+/gi,"-").slice(0,50);
+    downloadText("form-workouts-"+profileName+"-"+dateKey(new Date())+".json",JSON.stringify(data,null,2));showToast("This profile’s backup was downloaded.");
+  });
   $("#import").addEventListener("change", async event => {
     const file = event.target.files[0]; event.target.value = "";
     if (!file) return;
@@ -200,7 +220,7 @@
       if (file.size > 10 * 1024 * 1024) throw new Error("Too large");
       const restored = JSON.parse(await file.text());
       if (!validate(restored)) throw new Error("Invalid backup");
-      confirmAction("Restore backup?", "This replaces the log in this browser with " + restored.sessions.length + " sessions. Download your current backup first if you want to keep it.", "Restore backup", () => {
+      confirmAction("Restore backup?", "This replaces the log for “"+(users.find(u=>u.id===activeUser)?.name||"My training")+"” with " + restored.sessions.length + " sessions and the backup’s training preferences. Download this profile’s current backup first if you want to keep it.", "Restore backup", () => {
         data = restored; blockedStorage = false; selectedId = null;
         if (data.sessions.length) selectedDate = [...data.sessions].sort((a,b) => b.date.localeCompare(a.date))[0].date;
         save(); render(); showToast("Backup restored.");
@@ -209,10 +229,53 @@
   });
   // Avoid silently overwriting changes made in another tab.
   window.addEventListener("storage", event => {
-    if (event.key !== KEY) return;
+    if (![KEY,ACTIVE_KEY,USERS_KEY].includes(event.key)) return;
     blockedStorage = true;
     status("Log changed in another tab — reload before editing");
     showToast("Another tab changed your workout log. Download a backup of any unsaved changes, then reload this page.");
   });
+  window.FORMLog = {
+    snapshot: () => structuredClone(data),
+    selectedDate: () => selectedDate,
+    currentId: () => selectedId,
+    selectSession(id) { const s=data.sessions.find(s=>s.id===id); if(s){selectedDate=s.date;selectedId=s.id;render();} },
+    refresh: () => render(),
+    users: () => ({users:structuredClone(users),activeUser}),
+    selectUser(id) {
+      if(registryBlocked || !users.some(u=>u.id===id)) return false;
+      try { localStorage.setItem(ACTIVE_KEY,id); location.reload(); return true; }
+      catch { showToast("Browser storage is unavailable. A profile could not be opened."); return false; }
+    },
+    createUser(name) {
+      name=name.trim();
+      if(registryBlocked || !name || name.length>50 || users.length>=20) { showToast("Use a name up to 50 characters. This browser supports up to 20 profiles."); return; }
+      const user={id:uid(),name};
+      try { localStorage.setItem(USERS_KEY,JSON.stringify([...users,user])); localStorage.setItem(ACTIVE_KEY,user.id); location.reload(); }
+      catch { showToast("Profile could not be saved. Check browser storage."); }
+    },
+    setProfile(profile) {
+      if(!window.FORMTraining.validProfile(profile)) return false;
+      data.profile=structuredClone(profile); save(); return true;
+    },
+    addSessions(sessions) {
+      if(blockedStorage) { showToast("Reload or restore your log before adding a guided plan."); return false; }
+      const combined={...data,sessions:[...data.sessions,...sessions]};
+      if(!sessions.length||!validate(combined)) { showToast("This plan could not be added. Check your dates and available log space."); return false; }
+      data=combined; selectedDate=sessions[0].date; selectedId=sessions[0].id; save(); render(); return true;
+    },
+    addExercise(exercise,replaceId=null) {
+      const s=current();
+      if(!s) { showToast("Select or create a session first."); return false; }
+      const apply=()=>{
+        const exercises=replaceId?s.exercises.map(e=>e.id===replaceId?exercise:e):[...s.exercises,exercise];
+        if(!validate({...data,sessions:data.sessions.map(item=>item.id===s.id?{...s,exercises}:item)})) { showToast("The exercise could not be added.");return; }
+        s.exercises=exercises;save();render();
+      };
+      const old=s.exercises.find(e=>e.id===replaceId);
+      if(old && old.sets.some(t=>t.done||t.weight!==""&&t.weight!==0)) confirmAction("Swap this exercise?","The replacement starts with new sets. Your entries for this exercise in this session will be removed.","Swap exercise",apply);
+      else apply();
+      return true;
+    }
+  };
   render();
 })();

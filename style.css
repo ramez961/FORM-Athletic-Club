@@ -39,6 +39,10 @@ button, input, select {
   font: inherit;
 }
 
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--green);
+}
+
 a, button, input, select, summary {
   touch-action: manipulation;
 }
