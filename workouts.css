@@ -1,7 +1,6 @@
-.workout-page { --blue: #007b52; }
 .workout-page h1 em, .workout-page h2 em,
-.workout-page nav a:hover, .workout-page nav a[aria-current="page"] { color: var(--blue); }
-.workout-page :is(a, button, input, select, summary, textarea):focus-visible { outline-color: var(--blue); }
+.workout-page nav a:hover, .workout-page nav a[aria-current="page"] { color: var(--green); }
+.workout-page :is(a, button, input, select, summary, textarea):focus-visible { outline-color: var(--green); }
 .workout-main { max-width: 1440px; margin: auto; padding: 66px 5% 90px; }
 .log-intro { display: flex; justify-content: space-between; align-items: end; gap: 36px; padding-bottom: 48px; }
 .log-intro h1 { font-size: clamp(48px, 5.5vw, 80px); letter-spacing: -4px; margin: 18px 0; }
@@ -36,10 +35,10 @@
 .backup-actions { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
 .import-label { cursor: pointer; position: relative; }
 .import-label input { position: absolute; inset: 0; opacity: 0; width: 100%; margin: 0; cursor: pointer; }
-.import-label:focus-within { outline: 3px solid var(--blue); outline-offset: 4px; }
+.import-label:focus-within { outline: 3px solid var(--green); outline-offset: 4px; }
 .session-panel { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; min-height: 420px; padding: 28px; }
 .empty-log { display: flex; flex-direction: column; align-items: start; justify-content: center; min-height: 360px; max-width: 420px; margin: auto; }
-.empty-log .empty-mark { font-size: 48px; color: var(--blue); margin-bottom: 20px; }
+.empty-log .empty-mark { font-size: 48px; color: var(--green); margin-bottom: 20px; }
 .empty-log h2 { font-size: 34px; letter-spacing: -1.5px; margin: 0 0 16px; }
 .empty-log p { font-size: 14px; color: var(--muted); line-height: 1.8; margin-bottom: 24px; }
 .workout-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
@@ -65,7 +64,7 @@
 .add-exercise { width: 100%; justify-content: center; }
 .exercise-hint { font-size: 12px; line-height: 1.8; color: var(--muted); margin-bottom: 20px; }
 .workout-page textarea { width: 100%; margin: 8px 0 18px; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; padding: 12px; font: inherit; resize: vertical; }
-.workout-page textarea:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.workout-page textarea:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
 .workout-page dialog h2 { letter-spacing: -1.5px; }
 .confirm-actions { display: flex; justify-content: end; gap: 12px; }
 @media (max-width: 1100px) { .workout-page header > nav { gap: 15px; } .log-layout { grid-template-columns: 230px minmax(0,1fr); gap: 20px; } .session-panel { padding: 20px; } }
@@ -76,4 +75,3 @@
  .log-layout { grid-template-columns: minmax(0,1fr); } .storage-note { margin: 22px 0 6px; } .session-panel { padding: 18px 12px; } .exercise-card { padding: 15px 10px; } .workout-heading h2 { font-size: 28px; }
  .set-row, .set-labels { gap: 6px; grid-template-columns: 24px minmax(45px,1fr) minmax(55px,1fr) 36px 36px; } .set-row input { padding: 9px 5px; } .workout-heading { flex-wrap: wrap; }
 }
-

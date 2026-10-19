@@ -48,7 +48,7 @@ button {
 }
 
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
-  outline: 3px solid #005cff;
+  outline: 3px solid #007b52;
   outline-offset: 5px;
 }
 
@@ -98,7 +98,7 @@ nav {
 }
 
 nav a:hover {
-  color: #005cff;
+  color: #007b52;
 }
 
 .button {
@@ -177,7 +177,7 @@ blockquote, em {
 }
 
 h1 em, h2 em {
-  color: #005cff;
+  color: #007b52;
 }
 
 .hero-copy>p {
@@ -397,7 +397,7 @@ h3 {
 }
 
 .engine {
-  background: #00c6ff;
+  background: #4bd6ad;
 }
 
 .engine:after {
@@ -765,7 +765,7 @@ details p {
 .price-grid li:before {
   content: "✓";
   margin-right: 10px;
-  color: #005cff;
+  color: #007b52;
 }
 
 .price-grid .button {
@@ -1135,8 +1135,8 @@ dialog label {
   --paper: #f9fffe;
   --ink: #142033;
   --accent: #00ffa8;
-  --blue: #005cff;
-  --cyan: #00c6ff;
+  --green: #007b52;
+  --mint-secondary: #4bd6ad;
   --accent-soft: #a6ffe0;
   --muted: #4e5b6e;
   --line: #dadde2;
@@ -2232,7 +2232,7 @@ header {
 }
 
 .engine {
-  background: var(--cyan);
+  background: var(--mint-secondary);
   color: #0b1322;
 }
 
@@ -2242,7 +2242,7 @@ header {
 }
 
 .pilates {
-  background: #cfeaf4;
+  background: #d9eee4;
   color: #142033;
 }
 
@@ -2298,7 +2298,7 @@ header {
 }
 
 .stars {
-  color: #005cff;
+  color: #007b52;
 }
 
 .closing {
@@ -2318,7 +2318,7 @@ header {
 }
 
 .profile-hero h1 em {
-  color: #005cff;
+  color: #007b52;
 }
 
 #download-bag:disabled, .bag-controls button:disabled {
@@ -2697,7 +2697,7 @@ footer .credit a {
   content: "✓";
   position: absolute;
   left: 0;
-  color: #005cff;
+  color: #007b52;
   font-weight: 700;
 }
 
@@ -2818,7 +2818,7 @@ footer .credit a {
 nav a[aria-current="page"] {
   text-decoration: underline;
   text-underline-offset: 6px;
-  text-decoration-color: var(--blue);
+  text-decoration-color: var(--green);
 }
 
 .size-guide {
@@ -2888,3 +2888,4 @@ nav a[aria-current="page"] {
     padding: 20px;
   }
 }
+
