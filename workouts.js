@@ -20,7 +20,7 @@
   const shiftDate = (key, days) => { const d = parseDate(key); d.setDate(d.getDate() + days); return dateKey(d); };
   const validDate = (value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= "1900-01-01" && value <= "9999-12-31" && dateKey(parseDate(value)) === value;
   const uid = () => crypto.randomUUID();
-  const blankSet = () => ({ id: uid(), reps: "", weight: "", done: false });
+  const blankSet = () => ({ id: uid(), reps: "", weight: "", rir: "", done: false });
   const fresh = () => ({ version: 1, sessions: [] });
   let data = fresh(), selectedDate = dateKey(new Date()), selectedId = null, editingId = null, copyingId = null;
   let blockedStorage = false;
@@ -30,7 +30,7 @@
     const ids = new Set();
     const id = (v) => { if (!text(v, 100) || !v || ids.has(v)) return false; ids.add(v); return true; };
     if (!value || value.version !== 1 || !Array.isArray(value.sessions) || value.sessions.length > 5000 || (value.profile && !window.FORMTraining.validProfile(value.profile))) return false;
-    return value.sessions.every(s => s && id(s.id) && text(s.title, 80) && s.title.trim() && validDate(s.date) && ["kg", "lb"].includes(s.unit) && text(s.notes, 1500) && typeof s.completed === "boolean" && Array.isArray(s.exercises) && s.exercises.length <= 100 && s.exercises.every(e => e && id(e.id) && text(e.name, 100) && Array.isArray(e.sets) && e.sets.length > 0 && e.sets.length <= 100 && e.sets.every(t => t && id(t.id) && number(t.reps, 10000, true) && number(t.weight, 100000) && typeof t.done === "boolean")));
+    return value.sessions.every(s => s && id(s.id) && text(s.title, 80) && s.title.trim() && validDate(s.date) && ["kg", "lb"].includes(s.unit) && text(s.notes, 1500) && typeof s.completed === "boolean" && (s.readiness === undefined || ["ready","low","pain"].includes(s.readiness)) && Array.isArray(s.exercises) && s.exercises.length <= 100 && s.exercises.every(e => e && id(e.id) && text(e.name, 100) && Array.isArray(e.sets) && e.sets.length > 0 && e.sets.length <= 100 && e.sets.every(t => t && id(t.id) && number(t.reps, 10000, true) && number(t.weight, 100000) && (t.rir === undefined || t.rir === "" || Number.isInteger(t.rir) && t.rir >= 0 && t.rir <= 5) && typeof t.done === "boolean")));
   }
   function status(message) { $("#save-state").textContent = message; }
   try {
@@ -114,10 +114,10 @@
       const card = el("article", { className: "exercise-card" });
       const name = el("input", { value: exercise.name, placeholder: "e.g. Bench press", maxLength: 100, required: true });
       name.dataset.exerciseName = exercise.id;
-      name.addEventListener("input", () => { exercise.name = name.value; delete exercise.catalogId; delete exercise.target; save(); });
-      card.append(el("div", { className: "exercise-heading" }, el("label", { className: "exercise-name", textContent: "EXERCISE " + String(index + 1).padStart(2, "0") }, name), button("Remove", () => confirmAction("Remove exercise?", "Remove this exercise and its sets?", "Remove exercise", () => { s.exercises = s.exercises.filter(e => e.id !== exercise.id); save(); render(); }), "quiet remove-exercise")));
+      name.addEventListener("input", () => { exercise.name = name.value; delete exercise.catalogId; delete exercise.target; s.customized=true; save(); });
+      card.append(el("div", { className: "exercise-heading" }, el("label", { className: "exercise-name", textContent: "EXERCISE " + String(index + 1).padStart(2, "0") }, name), button("Remove", () => confirmAction("Remove exercise?", "Remove this exercise and its sets?", "Remove exercise", () => { s.exercises = s.exercises.filter(e => e.id !== exercise.id); s.customized=true; save(); render(); }), "quiet remove-exercise")));
       window.FORMTrainingUI?.decorateExercise(card, exercise, s, data);
-      card.append(el("div", { className: "set-labels", ariaHidden: "true" }, el("span", { textContent: "SET" }), el("span", { textContent: "REPS" }), el("span", { textContent: "WEIGHT (" + s.unit.toUpperCase() + ")" }), el("span", { textContent: "DONE" }), el("span")));
+      card.append(el("div", { className: "set-labels", ariaHidden: "true" }, el("span", { textContent: "SET" }), el("span", { textContent: "REPS" }), el("span", { textContent: "WEIGHT (" + s.unit.toUpperCase() + ")" }), el("span", { textContent: "REPS LEFT" }), el("span", { textContent: "DONE" }), el("span")));
       exercise.sets.forEach((set, setIndex) => {
         const row = el("div", { className: "set-row" + (set.done ? " done" : "") });
         row.append(el("span", { textContent: String(setIndex + 1) }));
@@ -127,15 +127,22 @@
           input.inputMode = field === "weight" ? "decimal" : "numeric";
           input.addEventListener("input", () => {
             if (!input.validity.valid) { input.setAttribute("aria-invalid", "true"); return; }
-            input.removeAttribute("aria-invalid"); set[field] = input.value === "" ? "" : Number(input.value); save();
+            input.removeAttribute("aria-invalid"); set[field] = input.value === "" ? "" : Number(input.value); set.edited=true; save();
           });
           input.addEventListener("blur", () => { if (!input.validity.valid) { input.reportValidity(); input.value = set[field]; input.removeAttribute("aria-invalid"); } });
           row.append(input);
         });
+        const effort=el("select",{className:"set-effort"});
+        effort.setAttribute("aria-label",(exercise.name||"Exercise "+(index+1))+", set "+(setIndex+1)+", reps left");
+        effort.append(el("option",{value:"",textContent:"—"}));
+        for(let remaining=0;remaining<=5;remaining++)effort.append(el("option",{value:String(remaining),textContent:remaining===5?"5+":String(remaining)}));
+        effort.value=Number.isInteger(set.rir)?String(set.rir):"";
+        effort.addEventListener("change",()=>{set.rir=effort.value===""?"":Number(effort.value);save();});
+        row.append(effort);
         const done = el("input", { type: "checkbox", checked: set.done });
         done.setAttribute("aria-label", "Mark set " + (setIndex + 1) + " complete for " + (exercise.name || "exercise " + (index + 1)));
-        done.addEventListener("change", () => { set.done = done.checked; row.classList.toggle("done", set.done); save(); window.dispatchEvent(new CustomEvent("form:set-completed",{detail:{done:set.done,rest:exercise.target?.rest||75}})); });
-        const remove = button("×", () => { exercise.sets = exercise.sets.filter(t => t.id !== set.id); save(); renderSession(); });
+        done.addEventListener("change", () => { set.done = done.checked; row.classList.toggle("done", set.done); save(); window.dispatchEvent(new CustomEvent("form:log-rendered")); window.dispatchEvent(new CustomEvent("form:set-completed",{detail:{done:set.done,rest:exercise.target?.rest||75}})); });
+        const remove = button("×", () => { exercise.sets = exercise.sets.filter(t => t.id !== set.id); if(exercise.target)exercise.target.sets=exercise.sets.length; s.customized=true; save(); renderSession(); });
         remove.setAttribute("aria-label", "Remove set " + (setIndex + 1));
         remove.disabled = exercise.sets.length === 1;
         row.append(done, remove); card.append(row);
@@ -143,7 +150,7 @@
       card.append(button("＋ Add set", () => {
         if (exercise.sets.length >= 100) { showToast("An exercise can have up to 100 sets."); return; }
         const previous = exercise.sets.at(-1);
-        exercise.sets.push({ ...blankSet(), reps: previous.reps, weight: previous.weight });
+        exercise.sets.push({ ...blankSet(), reps: previous.reps, weight: previous.weight }); if(exercise.target)exercise.target.sets=exercise.sets.length; s.customized=true;
         save(); renderSession();
       }));
       panel.append(card);
@@ -151,7 +158,7 @@
     panel.append(button("Add an exercise ＋", () => {
       if (s.exercises.length >= 100) { showToast("A session can have up to 100 exercises."); return; }
       const exercise = { id: uid(), name: "", sets: [blankSet()] };
-      s.exercises.push(exercise); save(); render();
+      s.exercises.push(exercise); s.customized=true; save(); render();
       document.querySelector('[data-exercise-name="' + exercise.id + '"]').focus();
     }, "button add-exercise"));
   }
@@ -184,7 +191,7 @@
       if (data.sessions.length >= 5000) { showToast("Your log is full. Download a backup and remove old sessions."); return; }
       const source = data.sessions.find(item => item.id === copyingId);
       const factor = source && source.unit !== unit ? (unit === "lb" ? 2.2046226218 : 1 / 2.2046226218) : 1;
-      s = { id: uid(), completed: false, exercises: source ? source.exercises.map(e => ({ ...e, id: uid(), sets: e.sets.map(t => ({ ...t, id: uid(), done: false, weight: t.weight === "" ? "" : Math.round(t.weight * factor * 100) / 100 })) })) : [] };
+      s = { id: uid(), completed: false, exercises: source ? source.exercises.map(e => ({ ...e, id: uid(), sets: e.sets.map(t => ({ ...t, id: uid(), done: false, rir:"", edited:false, weight: t.weight === "" ? "" : Math.round(t.weight * factor * 100) / 100 })) })) : [] };
       if (s.exercises.some(e => e.sets.some(t => t.weight > 100000))) { showToast("A converted weight exceeds the supported limit."); return; }
       data.sessions.push(s);
     }
@@ -257,6 +264,39 @@
       if(!window.FORMTraining.validProfile(profile)) return false;
       data.profile=structuredClone(profile); save(); return true;
     },
+    setReadiness(id,readiness) {
+      const session=data.sessions.find(s=>s.id===id);
+      if(!session||!["ready","low","pain"].includes(readiness))return false;
+      session.readiness=readiness;save();render();return true;
+    },
+    applySuggestion(exerciseId,adjustment) {
+      if(blockedStorage){showToast("Reload your log before applying a suggestion.");return false;}
+      const session=current(),exercise=session?.exercises.find(e=>e.id===exerciseId);
+      if(!exercise||session.completed||session.readiness==="pain")return false;
+      if(exercise.sets.every(t=>t.done)){showToast("All sets are complete. Your recorded work has been kept.");return false;}
+      const updated=structuredClone(exercise);
+      if(Number.isInteger(adjustment.sets)&&adjustment.sets>0&&adjustment.sets<updated.sets.length){
+        if(updated.sets.some(t=>t.done||t.edited||Number.isInteger(t.rir))) {showToast("This exercise already has entries. Keep them and adjust remaining sets manually.");return false;}
+        updated.sets=updated.sets.slice(0,adjustment.sets);
+        if(updated.target)updated.target.sets=updated.sets.length;
+      }
+      updated.sets.filter(t=>!t.done).forEach(t=>{
+        if(Number.isFinite(adjustment.weight))t.weight=adjustment.weight;
+        if(Number.isFinite(adjustment.reps))t.reps=adjustment.reps;
+        if(Number.isFinite(adjustment.weight)||Number.isFinite(adjustment.reps))t.rir="";
+      });
+      const next={...data,sessions:data.sessions.map(s=>s.id===session.id?{...s,exercises:s.exercises.map(e=>e.id===exerciseId?updated:e)}:s)};
+      if(!validate(next))return false;
+      data=next;save();render();showToast("Suggestion applied. Completed sets were kept.");return true;
+    },
+    applyPlanReview(updates) {
+      if(blockedStorage){showToast("Reload your log before applying a plan review.");return false;}
+      const safe=updates.filter(u=>data.sessions.some(s=>s.id===u.id&&JSON.stringify(s)===JSON.stringify(u.before)));
+      if(!safe.length){showToast("Those sessions changed. Preview the review again before applying.");return false;}
+      const next={...data,sessions:data.sessions.map(s=>safe.find(u=>u.id===s.id)?.after||s)};
+      if(!validate(next))return false;
+      data=structuredClone(next);save();render();showToast(safe.length+" upcoming sessions updated. Logged and manual sessions were kept.");return true;
+    },
     addSessions(sessions) {
       if(blockedStorage) { showToast("Reload or restore your log before adding a guided plan."); return false; }
       const combined={...data,sessions:[...data.sessions,...sessions]};
@@ -269,7 +309,7 @@
       const apply=()=>{
         const exercises=replaceId?s.exercises.map(e=>e.id===replaceId?exercise:e):[...s.exercises,exercise];
         if(!validate({...data,sessions:data.sessions.map(item=>item.id===s.id?{...s,exercises}:item)})) { showToast("The exercise could not be added.");return; }
-        s.exercises=exercises;save();render();
+        s.exercises=exercises;s.customized=true;save();render();
       };
       const old=s.exercises.find(e=>e.id===replaceId);
       if(old && old.sets.some(t=>t.done||t.weight!==""&&t.weight!==0)) confirmAction("Swap this exercise?","The replacement starts with new sets. Your entries for this exercise in this session will be removed.","Swap exercise",apply);

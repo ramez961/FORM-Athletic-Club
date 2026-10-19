@@ -4,11 +4,10 @@
   const { $,el,showToast }=window.FORM;
   const model=window.FORMTraining, log=window.FORMLog;
   const id=()=>crypto.randomUUID();
-  const defaults={level:"beginner",goal:"fitness",equipment:"bodyweight",duration:40,unit:"kg",days:[0,2,4],time:"18:00",food:"mixed"};
+  const defaults={level:"beginner",goal:"fitness",equipment:"bodyweight",duration:40,unit:"kg",days:[0,2,4],time:"18:00",food:"mixed",increment:2.5,preferred:[],excluded:[]};
   const profile=()=>log.snapshot().profile||{...defaults};
   const name=()=>{const u=log.users();return u.users.find(p=>p.id===u.activeUser)?.name||"My training";};
-  let preview=null,swapId=null,view="calendar",guidedSession=null;
-  const feelings=new Map();
+  let preview=null,swapId=null,view="calendar",guidedSession=null,review=null;
   let timerEnd=0,timerRemaining=0,timerPaused=false;
   function btn(text,action,cls="quiet"){
     const b=el("button",{type:"button",textContent:text,className:cls});b.addEventListener("click",action);return b;
@@ -26,6 +25,7 @@
   function openSetup(){
     const p=profile(),form=$("#training-setup");
     ["level","goal","equipment","duration","unit","time","food"].forEach(key=>form.elements[key].value=p[key]);
+    form.elements.increment.value=p.increment||(p.unit==="lb"?5:2.5);
     form.elements.start.value=log.selectedDate();form.elements.start.min="1900-01-01";form.elements.start.max="9998-12-01";
     form.querySelectorAll('[name="days"]').forEach(input=>input.checked=p.days.includes(Number(input.value)));
     $("#plan-preview").hidden=true;$("#setup-error").textContent="";preview=null;
@@ -39,16 +39,17 @@
   });
   $("#training-setup").addEventListener("submit",event=>{
     event.preventDefault();const form=event.currentTarget;
-    const p={level:form.elements.level.value,goal:form.elements.goal.value,equipment:form.elements.equipment.value,duration:Number(form.elements.duration.value),unit:form.elements.unit.value,days:[...form.querySelectorAll('[name="days"]:checked')].map(i=>Number(i.value)),time:form.elements.time.value,food:form.elements.food.value};
+    const p={...profile(),level:form.elements.level.value,goal:form.elements.goal.value,equipment:form.elements.equipment.value,duration:Number(form.elements.duration.value),unit:form.elements.unit.value,days:[...form.querySelectorAll('[name="days"]:checked')].map(i=>Number(i.value)),time:form.elements.time.value,food:form.elements.food.value,increment:Number(form.elements.increment.value)};
     try {
       if(!model.validProfile(p))throw new Error("Choose 2–4 training days and complete each field.");
       const generated=model.buildPlan(p,form.elements.start.value,log.snapshot().sessions,id);
       log.setProfile(p);preview={...generated,profile:p};renderSummary();
       $("#setup-error").textContent="";$("#plan-preview").hidden=false;
       $("#plan-description").textContent=generated.description;
-      $("#plan-note").textContent=generated.sessions.length+" sessions ready. "+generated.skipped.length+" dates skipped because you already have a session."+ (generated.bodyweightPull?" With no equipment, upper-back work is light. A band or gym row gives you a stronger pulling option when available.":"");
+      $("#plan-note").textContent=generated.sessions.length+" sessions ready. "+generated.skipped.length+" dates skipped because you already have a session. "+generated.warnings.join(" ");
       const weeks=$("#preview-weeks");weeks.replaceChildren();
-      generated.sessions.forEach(s=>weeks.append(el("div",{className:"preview-session"},el("time",{textContent:new Date(s.date+"T12:00:00").toLocaleDateString("en",{weekday:"short",month:"short",day:"numeric"}),dateTime:s.date}),el("div",{},el("strong",{textContent:s.title}),el("span",{textContent:s.exercises.map(e=>e.name).join(" · ")})))));
+      generated.sessions.forEach(s=>weeks.append(el("div",{className:"preview-session"},el("time",{textContent:new Date(s.date+"T12:00:00").toLocaleDateString("en",{weekday:"short",month:"short",day:"numeric"}),dateTime:s.date}),el("div",{},el("strong",{textContent:s.title+" · estimated "+s.plan.estimatedMinutes+" min"}),el("span",{textContent:s.exercises.map(e=>e.name+" ("+e.sets.length+" sets)").join(" · ")})))));
+      renderVolume($("#preview-volume"),generated.reports);
       $("#apply-plan").disabled=!generated.sessions.length;$("#apply-plan").textContent=generated.sessions.length?"Add "+generated.sessions.length+" sessions to my calendar ↗":"These dates already have sessions";
       $("#plan-preview").scrollIntoView({block:"start",behavior:"smooth"});
     } catch(error){$("#setup-error").textContent=error.message;$("#plan-preview").hidden=true;}
@@ -69,13 +70,43 @@
     $("#companion-title").textContent=p?name()+" · your next chapter":name()+" · let’s get started.";
     $("#profile-summary").textContent=p?model.levels[p.level]+" · "+model.goals[p.goal]+" · "+model.equipment[p.equipment]+" · "+p.days.length+" days/week":"Tell us your level, goals and equipment to get a starting plan you can make your own.";
     $("#edit-setup").textContent=p?"Adjust my plan":"Set up my training";
+    $("#review-plan").disabled=!p;
     const today=model.dateKey(new Date()),monday=model.shiftDate(today,-((new Date(today+"T12:00:00").getDay()+6)%7)),sunday=model.shiftDate(monday,6);
     const week=data.sessions.filter(s=>s.date>=monday&&s.date<=sunday);
     const next=data.sessions.filter(s=>!s.completed&&s.date>=today).sort((a,b)=>a.date.localeCompare(b.date))[0];
     const stats=$("#progress-summary");stats.replaceChildren(el("span",{className:"eyebrow",textContent:"THIS WEEK"}),el("strong",{textContent:week.filter(s=>s.completed).length+" / "+week.length}),el("p",{textContent:"sessions marked complete"}));
     if(next)stats.append(btn("Next: "+next.title+" · "+next.date,()=>{log.selectSession(next.id);setView("calendar");$("#session-panel").scrollIntoView({block:"start",behavior:"smooth"});},"next-session"));
     else stats.append(el("p",{textContent:p?"Your next session is yours to plan.":"A good routine starts with a realistic week."}));
+    const selected=log.selectedDate(),start=model.shiftDate(selected,-((new Date(selected+"T12:00:00").getDay()+6)%7));
+    renderVolume($("#calendar-volume"),model.weeklyReport(data.sessions,start,p||defaults).slice(0,1));
   }
+  function renderVolume(container,reports){
+    container.replaceChildren();
+    if(!reports.length)return;
+    const table=el("table",{className:"volume-table"}),head=el("tr",{},el("th",{textContent:"Muscle group",scope:"col"}),el("th",{textContent:"Starting range",scope:"col"}));
+    reports.forEach(r=>head.append(el("th",{textContent:reports.length===1?r.from+" – "+r.to:"Week "+r.week,scope:"col"})));
+    table.append(el("caption",{textContent:"Weekly working-set equivalents · planning estimates"}),el("thead",{},head));
+    const body=el("tbody");
+    model.muscleGroups.forEach(group=>{
+      const row=el("tr",{},el("th",{textContent:model.muscleNames[group],scope:"row"}),el("td",{textContent:reports[0].target[group].join("–")}));
+      reports.forEach(r=>{
+        const value=r.planned[group],range=r.target[group];
+        row.append(el("td",{className:value<range[0]?"volume-low":value>range[1]?"volume-high":"",textContent:value+" planned / "+r.completed[group]+" done"+(value<range[0]?" · below range":value>range[1]?" · above range":"")}));
+      });
+      body.append(row);
+    });
+    table.append(body);container.append(el("div",{className:"volume-scroll"},table),el("p",{className:"caption",textContent:"Primary working sets count as 1; secondary involvement counts as 0.5. Light activation is excluded. These approximate ranges guide planning, not a guarantee of results. Trained muscle-growth plans aim around 10 sets per major group when time and recovery allow."}));
+    if(reports.some(r=>r.unknown))container.append(el("p",{className:"caption",textContent:"Some custom exercise names are not recognized, so their muscle contribution is not counted."}));
+  }
+  $("#review-plan").addEventListener("click",()=>{
+    const data=log.snapshot(),today=model.dateKey(new Date());
+    review=model.reviewPlan(profile(),data.sessions,today,id);
+    const container=$("#review-results");container.replaceChildren(el("p",{textContent:review.updates.length+" upcoming sessions have changes supported by your logs. "+review.skipped.length+" logged or customized guided sessions were kept. Manual workouts are kept too."}));
+    if(!review.updates.length)container.append(el("p",{textContent:"No changes are supported yet. Log completed working sets and reps left, or record recovery feedback after training. The app will not assume that you got stronger just because another week passed."}));
+    review.updates.forEach(update=>container.append(el("article",{className:"review-change"},el("h3",{textContent:update.after.title+" · "+update.after.date}),...update.reasons.map(reason=>el("p",{textContent:reason})))));
+    $("#apply-review").disabled=!review.updates.length;$("#review-dialog").showModal();
+  });
+  $("#apply-review").addEventListener("click",()=>{if(review&&log.applyPlanReview(review.updates)){$("#review-dialog").close();review=null;}});
   $("#open-profiles").addEventListener("click",()=>{
     const state=log.users(),picker=$("#profile-picker");picker.replaceChildren();
     state.users.forEach(u=>picker.append(el("option",{value:u.id,textContent:u.name,selected:u.id===state.activeUser})));
@@ -109,11 +140,11 @@
       panel.append(recovery);return;
     }
     const box=el("div",{className:"session-coach"});
-    const feeling=feelings.get(s.id)||"ready";
+    const feeling=s.readiness||"ready";
     const select=el("select",{});["ready","low","pain"].forEach((v,i)=>select.append(el("option",{value:v,textContent:["Ready to train","Low energy / more recovery needed","Pain during movement"][i],selected:v===feeling})));
-    select.addEventListener("change",()=>{feelings.set(s.id,select.value);log.refresh();});
+    select.addEventListener("change",()=>{log.setReadiness(s.id,select.value);});
     box.append(el("div",{className:"coach-top"},el("div",{},el("span",{className:"eyebrow",textContent:"YOUR SESSION COMPANION"}),el("h3",{textContent:feeling==="pain"?"Pause and reassess.":s.completed?"A session to build on.":"One controlled set at a time."})),el("label",{textContent:"How are you feeling?"},select)));
-    const advice=feeling==="pain"?"Stop the movement that causes pain. Do not use load or rep suggestions to push through it; seek qualified advice if pain persists.":feeling==="low"?"Keep today easy. Use a comfortable load, take longer rests, or reduce sets manually. You can also move this session to another day.":"Begin with easy movement and a light practice set. The suggested reps are a starting point; keep a few good reps in reserve.";
+    const advice=feeling==="pain"?"Stop the movement that causes pain. Do not use load or rep suggestions to push through it; seek qualified advice if pain persists.":feeling==="low"?"Keep today easy. Use a comfortable load, take longer rests, or preview fewer sets. You can also move this session to another day.":"Warm up separately, then log working sets. Reps left estimates how many more controlled reps you could have completed; aim to finish most working sets with 2–3 left.";
     box.append(el("p",{textContent:advice}));
     if(feeling!=="pain")box.append(btn(guidedSession===s.id?"End guided mode":"Start guided mode",()=>{
       if(guidedSession===s.id){guidedSession=null;timerEnd=0;timerRemaining=0;}
@@ -134,11 +165,12 @@
     panel.append(box);updateTimer();
   }
   function decorateExercise(card,exercise,s,data){
-    const rec=model.recommendation(exercise,data.sessions,s.date,s.unit,s.id);
-    const feeling=feelings.get(s.id)||"ready";
+    const feeling=s.readiness||"ready";
+    const rec=model.recommendation(exercise,data.sessions,s.date,s.unit,s.id,profile(),feeling);
     const guidance=el("div",{className:"exercise-guidance"});
-    if(rec.target)guidance.append(el("strong",{textContent:rec.target.sets+" sets · "+rec.target.min+"–"+rec.target.max+" reps · rest "+rec.target.rest+" sec"}));
-    guidance.append(el("p",{textContent:feeling==="pain"?"Pause this exercise. Do not train through pain.":feeling==="low"?"Recovery first today. Repeat an easy load or reduce sets; save progression for a better day.":rec.message}));
+    if(rec.target)guidance.append(el("strong",{textContent:rec.target.sets+(rec.entry?.light?" control set":" working set")+(rec.target.sets===1?"":"s")+" · "+rec.target.min+"–"+rec.target.max+" reps · rest "+rec.target.rest+" sec"+(rec.entry?.light?" · comfortable range":" · 2–3 reps left")}));
+    guidance.append(el("p",{textContent:rec.message}));
+    if(rec.adjustment&&!s.completed&&feeling!=="pain")guidance.append(el("div",{className:"suggestion-preview"},el("p",{textContent:"Optional change: "+rec.adjustment.reason}),btn("Apply to uncompleted sets",()=>log.applySuggestion(exercise.id,rec.adjustment))));
     if(rec.entry){
       const details=el("details",{className:"movement-cue"},el("summary",{textContent:"How to do it · "+model.equipment[rec.entry.gear]}),el("p",{textContent:rec.entry.cue}));
       if(["db-row","single-bridge","reverse-lunge","db-lunge","dead-bug","bird-dog"].includes(rec.entry.id))details.append(el("p",{textContent:"Reps are per side. Log added weight consistently: per dumbbell for dumbbell exercises; total bar weight for barbells."}));
@@ -162,6 +194,15 @@
       const card=el("article",{className:"library-card"},el("div",{className:"eyebrow",textContent:model.equipment[e.gear]+" / "+["STARTER","REGULAR","EXPERIENCED"][e.difficulty]}),el("h3",{textContent:e.name}),el("p",{textContent:e.cue}),el("span",{className:"library-prescription",textContent:t.sets+" sets · "+t.min+"–"+t.max+" reps"}));
       const outside=model.available(p).every(a=>a.id!==e.id)||e.difficulty>{beginner:0,intermediate:1,experienced:2}[p.level];
       if(outside)card.append(el("p",{className:"caption",textContent:"Outside your saved equipment or level. Choose this only if it fits your setup and experience."}));
+      const preferred=(p.preferred||[]).includes(e.id),excluded=(p.excluded||[]).includes(e.id);
+      const preference=(kind)=>{
+        const current=profile(),set=new Set(current[kind]||[]);
+        set.has(e.id)?set.delete(e.id):set.add(e.id);
+        const other=kind==="preferred"?"excluded":"preferred";
+        log.setProfile({...current,[kind]:[...set],[other]:(current[other]||[]).filter(x=>x!==e.id)});
+        renderLibrary();renderSummary();
+      };
+      card.append(el("div",{className:"exercise-preferences"},btn(preferred?"✓ Preferred":"Prefer for my plans",()=>preference("preferred"),"text-link"),btn(excluded?"✓ Excluded from plans":"Exclude from plans",()=>preference("excluded"),"text-link")));
       card.append(btn(swapId?"Use this replacement":"Add to my session",()=>{
         const exercise=model.makeExercise(e,p,id);
         if(log.currentId()){

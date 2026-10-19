@@ -157,11 +157,35 @@
 .workout-page textarea:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
 .workout-page dialog h2 { letter-spacing: -1.5px; }
 .confirm-actions { display: flex; justify-content: end; gap: 12px; }
+.set-row, .set-labels { grid-template-columns: 26px minmax(48px,.8fr) minmax(65px,1fr) 70px 40px 36px; gap: 8px; }
+.set-row select { margin: 0; min-width: 0; padding: 9px 6px; }
+.set-labels span:nth-child(4) { text-align: left; }
+.set-labels span:nth-child(5) { text-align: center; }
+.volume-audit { border: 1px solid var(--line); border-radius: 4px; padding: 18px; margin-bottom: 25px; }
+.volume-scroll { max-width: 100%; overflow-x: auto; margin: 18px 0 10px; }
+.volume-table { width: 100%; min-width: 550px; border-collapse: collapse; font-size: 11px; }
+.volume-table caption { text-align: left; font-weight: 600; margin-bottom: 12px; color: var(--green); }
+.volume-table th, .volume-table td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--line); font-weight: 400; }
+.volume-table thead th { background: var(--surface); font-weight: 600; }
+.volume-table tbody th { font-weight: 600; }
+.volume-low { color: #87520c; background: #fff4df; }
+.volume-high { color: #855019; background: #fff4df; }
+.exercise-preferences { display: flex; flex-wrap: wrap; gap: 10px; }
+.exercise-preferences .text-link { font-size: 11px; }
+.suggestion-preview { margin: 14px 0; border-left: 3px solid var(--green); padding: 10px 14px; background: #e2f6ed; }
+.suggestion-preview p { font-size: 12px; line-height: 1.7; margin-bottom: 12px; }
+.review-change { padding: 18px 0; border-bottom: 1px solid var(--line); }
+.review-change h3 { font-weight: 600; font-size: 16px; margin-bottom: 12px; }
+.review-change p { margin-bottom: 8px; }
+#apply-review { margin-top: 22px; }
+#review-results { max-height: 420px; overflow: auto; }
+#preview-volume { margin-bottom: 24px; }
 @media (max-width: 1100px) { .workout-page header > nav { gap: 15px; } .log-layout { grid-template-columns: 230px minmax(0,1fr); gap: 20px; } .session-panel { padding: 20px; } }
 @media (max-width: 760px) {
  .workout-main { padding-top: 35px; } .log-intro { display: block; padding-bottom: 28px; } .log-intro h1 { letter-spacing: -2.5px; } .intro-action { margin-top: 24px; }
  .log-toolbar { flex-wrap: wrap; gap: 18px; } .week-controls { gap: 7px; } .week-controls h2 { font-size: 15px; } .week-controls .quiet { padding: 9px; }
  .week-days { gap: 4px; } .day-button { padding: 12px 3px; text-align: center; min-height: 104px; } .day-button span { font-size: 10px; } .day-button .day-number { font-size: 23px; } .day-button .day-count { font-size: 9px; }
  .log-layout { grid-template-columns: minmax(0,1fr); } .storage-note { margin: 22px 0 6px; } .session-panel { padding: 18px 12px; } .exercise-card { padding: 15px 10px; } .workout-heading h2 { font-size: 28px; }
- .set-row, .set-labels { gap: 6px; grid-template-columns: 24px minmax(45px,1fr) minmax(55px,1fr) 36px 36px; } .set-row input { padding: 9px 5px; } .workout-heading { flex-wrap: wrap; }
+ .set-row, .set-labels { gap: 4px; grid-template-columns: 20px minmax(36px,.8fr) minmax(47px,1fr) 46px 26px 26px; } .set-row input, .set-row select { padding: 9px 3px; font-size: 12px; } .workout-heading { flex-wrap: wrap; }
+ .set-labels { font-size: 8px; } .volume-audit { padding: 14px 10px; } .set-row .quiet { padding: 8px 3px; }
 }
